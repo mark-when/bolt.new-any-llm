@@ -89,15 +89,15 @@ export const ChatImpl = memo(
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
-    const [model, setModel] = useState(() => {
-      const savedModel = Cookies.get('selectedModel');
-      return savedModel || DEFAULT_MODEL;
-    });
-    const [provider, setProvider] = useState(() => {
-      const savedProvider = Cookies.get('selectedProvider');
-      return PROVIDER_LIST.find((p) => p.name === savedProvider) || DEFAULT_PROVIDER;
-    });
+  const [chatStarted, setChatStarted] = useState(true);
+  const [model, setModel] = useState(() => {
+    const savedModel = Cookies.get('selectedModel');
+    return savedModel || DEFAULT_MODEL;
+  });
+  const [provider, setProvider] = useState(() => {
+    const savedProvider = Cookies.get('selectedProvider');
+    return PROVIDER_LIST.find((p) => p.name === savedProvider) || DEFAULT_PROVIDER;
+  });
 
     const { showChat, started } = useStore(chatStore);
 
