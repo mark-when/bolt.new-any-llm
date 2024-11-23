@@ -2,7 +2,6 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useState } from 'react';
 import { useNavigate } from '@remix-run/react';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { chatStore } from '~/lib/stores/chat';
 
 export function GitHubImportDialog() {
   const [open, setOpen] = useState(false);

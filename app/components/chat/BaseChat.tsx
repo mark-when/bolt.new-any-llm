@@ -28,7 +28,7 @@ import { ExamplePrompts } from '~/components/chat/ExamplePrompts';
 const ModelSelector = ({ model, setModel, provider, setProvider, modelList, providerList, apiKeys }) => {
   return (
     <div className="flex flex-col gap-2">
-      <GitHubImportDialog />
+      <ClientOnly>{() => <GitHubImportDialog />}</ClientOnly>
       <div className="flex gap-2 flex-col sm:flex-row flex-1">
         <select
           value={provider?.name}
