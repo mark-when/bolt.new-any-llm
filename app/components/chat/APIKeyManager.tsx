@@ -21,7 +21,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
   };
 
   return (
-    <div className="flex items-start sm:items-center mt-2 mb-2 flex-col sm:flex-row">
+    <div className="flex items-start sm:items-center mt-2 mb-2 flex-col sm:flex-row px-3">
       <div>
         <span className="text-sm text-bolt-elements-textSecondary">{provider?.name} API Key:</span>
         {!isEditing && (
