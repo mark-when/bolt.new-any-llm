@@ -1,6 +1,5 @@
 import { WebContainer } from '@webcontainer/api';
 import { atom, map, type MapStore } from 'nanostores';
-import * as nodePath from 'node:path';
 import type { BoltAction } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
@@ -14,6 +13,27 @@ interface GitHubContent {
   path: string;
   type: 'file' | 'dir';
   download_url?: string;
+}
+
+interface GitHubBranchResponse {
+  commit: {
+    sha: string;
+    url: string;
+  };
+  name: string;
+}
+
+interface GitHubTreeResponse {
+  sha: string;
+  tree: Array<{
+    path: string;
+    mode: string;
+    type: string;
+    size?: number;
+    sha: string;
+    url: string;
+  }>;
+  truncated: boolean;
 }
 
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
@@ -210,7 +230,7 @@ export class ActionRunner {
 
     const webcontainer = await this.#webcontainer;
 
-    let folder = nodePath.dirname(action.filePath);
+    let folder = action.filePath.split('/').slice(0, -1).join('/');
 
     // remove trailing slashes
     folder = folder.replace(/\/+$/g, '');
@@ -247,60 +267,52 @@ export class ActionRunner {
       const branch = action.branch || 'main';
       const basePath = action.path || '';
 
-      // Recursively get all files
-      await this.#processGitHubDirectory(webcontainer, owner, repo, branch, basePath, action.targetDir);
+      // Get the entire tree in one API call
+      const treeResponse = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`
+      );
+      if (!treeResponse.ok) {
+        throw new Error(`Failed to get tree: ${treeResponse.statusText}`);
+      }
+      const treeData: GitHubTreeResponse = await treeResponse.json();
+
+      // Filter tree items based on basePath if specified
+      const relevantFiles = treeData.tree.filter(item => {
+        if (basePath) {
+          return item.path.startsWith(basePath) && item.type === 'blob';
+        }
+        return item.type === 'blob';
+      });
+
+      // Download and write files
+      for (const file of relevantFiles) {
+        const relativePath = basePath ? file.path.slice(basePath.length).replace(/^\//, '') : file.path;
+        const targetPath = [action.targetDir, ...relativePath.split('/')].join('/');
+
+        // Create parent directory if needed
+        const directory = targetPath.split('/').slice(0, -1).join('/');
+        if (directory !== '.') {
+          await webcontainer.fs.mkdir(directory, { recursive: true });
+        }
+
+        // Download file content
+        const contentResponse = await fetch(
+          `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${file.path}`
+        );
+        if (!contentResponse.ok) {
+          logger.error(`Failed to download file ${file.path}`);
+          continue;
+        }
+
+        const content = new Uint8Array(await contentResponse.arrayBuffer());
+        await webcontainer.fs.writeFile(targetPath, content);
+        logger.debug(`Written file ${targetPath}`);
+      }
 
       logger.debug(`GitHub repository downloaded to ${action.targetDir}`);
     } catch (error) {
       logger.error('Failed to process GitHub repository\n\n', error);
       throw error;
-    }
-  }
-
-  async #processGitHubDirectory(
-    webcontainer: WebContainer,
-    owner: string,
-    repo: string,
-    branch: string,
-    path: string,
-    targetDir: string,
-  ) {
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to get directory contents: ${response.statusText}`);
-    }
-
-    const contents = (await response.json()) as GitHubContent[];
-    const items = Array.isArray(contents) ? contents : [contents];
-
-    for (const item of items) {
-      const targetPath = nodePath.join(targetDir, item.path);
-
-      if (item.type === 'dir') {
-        // Create directory and process its contents
-        await webcontainer.fs.mkdir(targetPath, { recursive: true });
-        await this.#processGitHubDirectory(webcontainer, owner, repo, branch, item.path, targetDir);
-      } else if (item.type === 'file' && item.download_url) {
-        // Download and write file
-        const fileResponse = await fetch(item.download_url);
-        if (!fileResponse.ok) {
-          logger.error(`Failed to download file ${item.path}`);
-          continue;
-        }
-
-        const content = new Uint8Array(await fileResponse.arrayBuffer());
-        
-        // Create parent directory if needed
-        const directory = nodePath.dirname(targetPath);
-        if (directory !== '.') {
-          await webcontainer.fs.mkdir(directory, { recursive: true });
-        }
-
-        // Write the file
-        await webcontainer.fs.writeFile(targetPath, content);
-        logger.debug(`Written file ${targetPath}`);
-      }
     }
   }
 
