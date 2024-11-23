@@ -3,7 +3,6 @@ import useViewport from '~/lib/hooks';
 import { chatStore } from '~/lib/stores/chat';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
-import { GitHubImportDialog } from './GitHubImportDialog';
 
 interface HeaderActionButtonsProps {}
 
@@ -17,7 +16,6 @@ export function HeaderActionButtons({}: HeaderActionButtonsProps) {
 
   return (
     <div className="flex">
-      <GitHubImportDialog />
       <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden">
         <Button
           active={showChat}

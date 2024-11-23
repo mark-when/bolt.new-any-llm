@@ -21,7 +21,7 @@ export function GitHubImportDialog() {
       <Dialog.Trigger asChild>
         <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-bolt-elements-textPrimary bg-bolt-elements-item-backgroundDefault hover:bg-bolt-elements-item-backgroundHover rounded-md">
           <div className="i-ph:git-branch-duotone text-lg" />
-          Import from GitHub
+          Import project from GitHub
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
