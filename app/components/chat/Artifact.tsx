@@ -189,6 +189,35 @@ const ActionList = memo(({ actions }: ActionListProps) => {
                   <div className="flex items-center w-full min-h-[28px]">
                     <span className="flex-1">Run command</span>
                   </div>
+                ) : type === 'github' ? (
+                  <div className="flex items-center w-full min-h-[28px]">
+                    <span className="flex-1">
+                      Import GitHub repository{' '}
+                      <code className="bg-bolt-elements-artifacts-inlineCode-background text-bolt-elements-artifacts-inlineCode-text px-1.5 py-1 rounded-md">
+                        {action.repository}
+                      </code>
+                      {action.branch && (
+                        <span>
+                          {' '}
+                          (branch:{' '}
+                          <code className="bg-bolt-elements-artifacts-inlineCode-background text-bolt-elements-artifacts-inlineCode-text px-1.5 py-1 rounded-md">
+                            {action.branch}
+                          </code>
+                          )
+                        </span>
+                      )}
+                      {action.path && (
+                        <span>
+                          {' '}
+                          (path:{' '}
+                          <code className="bg-bolt-elements-artifacts-inlineCode-background text-bolt-elements-artifacts-inlineCode-text px-1.5 py-1 rounded-md">
+                            {action.path}
+                          </code>
+                          )
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 ) : type === 'start' ? (
                   <a
                     onClick={(e) => {

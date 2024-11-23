@@ -1,4 +1,4 @@
-export type ActionType = 'file' | 'shell';
+export type ActionType = 'file' | 'shell' | 'github';
 
 export interface BaseAction {
   content: string;
@@ -17,6 +17,14 @@ export interface StartAction extends BaseAction {
   type: 'start';
 }
 
-export type BoltAction = FileAction | ShellAction | StartAction;
+export interface GitHubAction extends BaseAction {
+  type: 'github';
+  repository: string;     // Format: owner/repo
+  targetDir: string;      // Directory to clone into
+  branch?: string;        // Optional branch name
+  path?: string;         // Optional subdirectory path within the repository
+}
+
+export type BoltAction = FileAction | ShellAction | StartAction | GitHubAction;
 
 export type BoltActionData = BoltAction | BaseAction;
