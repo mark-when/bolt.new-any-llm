@@ -6,44 +6,27 @@ import { Chat } from '~/components/chat/Chat.client';
 import { Header } from '~/components/header/Header';
 import { GitHubLoader } from '~/components/github/GitHubLoader.client';
 
-export interface GitHubImportData {
-  repository: string;
-  targetDir: string;
-  path?: string;
-  branch?: string;
-}
-
 interface LoaderData {
-  github?: GitHubImportData;
+  path: string;
+  searchParams: Record<string, string>;
 }
 
 // Handle URLs like /github.com/owner/repo or /github/owner/repo
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const path = params['*'] || '';
-  const prefix = params.prefix || '';
-  
-  // Extract owner/repo from the URL path
-  const repoPath = path.replace(/^(\.com\/)?/, '');
-  const [owner, repo, ...rest] = repoPath.split('/');
-  
-  if (!owner || !repo) {
-    return json<LoaderData>({});
-  }
+  const searchParams: Record<string, string> = {};
+  url.searchParams.forEach((value, key) => {
+    searchParams[key] = value;
+  });
 
-  // Create the GitHub data object
-  const githubData: GitHubImportData = {
-    repository: `${owner}/${repo}`,
-    targetDir: '.',
-    branch: url.searchParams.get('branch') || undefined,
-    path: rest.length > 0 ? rest.join('/') : undefined,
-  };
-
-  return json<LoaderData>({ github: githubData });
+  return json<LoaderData>({ 
+    path: params['*'] || '',
+    searchParams
+  });
 }
 
 export default function GitHubImport() {
-  const { github } = useLoaderData<typeof loader>();
+  const { path, searchParams } = useLoaderData<typeof loader>();
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -51,7 +34,7 @@ export default function GitHubImport() {
       <ClientOnly fallback={<BaseChat />}>
         {() => (
           <>
-            {github && <GitHubLoader initialData={github} />}
+            <GitHubLoader path={path} searchParams={searchParams} />
             <Chat />
           </>
         )}

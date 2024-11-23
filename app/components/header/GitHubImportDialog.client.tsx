@@ -1,7 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState } from 'react';
 import { useNavigate } from '@remix-run/react';
-import { workbenchStore } from '~/lib/stores/workbench';
 
 export function GitHubImportDialog() {
   const [open, setOpen] = useState(false);
@@ -18,34 +17,8 @@ export function GitHubImportDialog() {
     // Extract repository path from URL
     const repoPath = url.replace(/^(https?:\/\/)?(www\.)?github\.com\//, '');
     
-    // Create a chat message for the import
-    const message = {
-      id: `github-import-${Date.now()}`,
-      role: 'assistant',
-      content: `Importing GitHub repository: ${repoPath}`,
-    };
-
-    // Create an artifact to show import status
-    workbenchStore.addArtifact({
-      messageId: message.id,
-      id: `artifact-${message.id}`,
-      title: 'GitHub Repository Import',
-    });
-
-    // Add GitHub import action
-    workbenchStore.addAction({
-      messageId: message.id,
-      artifactId: `artifact-${message.id}`,
-      actionId: `action-${message.id}`,
-      action: {
-        type: 'github',
-        repository: repoPath,
-        targetDir: '.',
-        content: `Importing GitHub repository: ${repoPath}`,
-      },
-    });
-
     // Navigate to our GitHub import route
+    // The GitHubLoader component will handle the actual import process
     navigate(`/github.com/${repoPath}`);
     setOpen(false);
   };
