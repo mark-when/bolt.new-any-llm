@@ -8,34 +8,6 @@ import type { BoltShell } from '~/utils/shell';
 
 const logger = createScopedLogger('ActionRunner');
 
-interface GitHubContent {
-  name: string;
-  path: string;
-  type: 'file' | 'dir';
-  download_url?: string;
-}
-
-interface GitHubBranchResponse {
-  commit: {
-    sha: string;
-    url: string;
-  };
-  name: string;
-}
-
-interface GitHubTreeResponse {
-  sha: string;
-  tree: Array<{
-    path: string;
-    mode: string;
-    type: string;
-    size?: number;
-    sha: string;
-    url: string;
-  }>;
-  truncated: boolean;
-}
-
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
 
 export type BaseActionState = BoltAction & {
@@ -144,10 +116,6 @@ export class ActionRunner {
           await this.#runFileAction(action);
           break;
         }
-        case 'github': {
-          await this.#runGitHubAction(action);
-          break;
-        }
         case 'start': {
           // making the start app non blocking
 
@@ -249,70 +217,6 @@ export class ActionRunner {
       logger.debug(`File written ${action.filePath}`);
     } catch (error) {
       logger.error('Failed to write file\n\n', error);
-    }
-  }
-
-  async #runGitHubAction(action: ActionState) {
-    if (action.type !== 'github') {
-      unreachable('Expected github action');
-    }
-
-    const webcontainer = await this.#webcontainer;
-
-    try {
-      // Create target directory
-      await webcontainer.fs.mkdir(action.targetDir, { recursive: true });
-
-      const [owner, repo] = action.repository.split('/');
-      const branch = action.branch || 'main';
-      const basePath = action.path || '';
-
-      // Get the entire tree in one API call
-      const treeResponse = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`
-      );
-      if (!treeResponse.ok) {
-        throw new Error(`Failed to get tree: ${treeResponse.statusText}`);
-      }
-      const treeData: GitHubTreeResponse = await treeResponse.json();
-
-      // Filter tree items based on basePath if specified
-      const relevantFiles = treeData.tree.filter(item => {
-        if (basePath) {
-          return item.path.startsWith(basePath) && item.type === 'blob';
-        }
-        return item.type === 'blob';
-      });
-
-      // Download and write files
-      for (const file of relevantFiles) {
-        const relativePath = basePath ? file.path.slice(basePath.length).replace(/^\//, '') : file.path;
-        const targetPath = [action.targetDir, ...relativePath.split('/')].join('/');
-
-        // Create parent directory if needed
-        const directory = targetPath.split('/').slice(0, -1).join('/');
-        if (directory !== '.') {
-          await webcontainer.fs.mkdir(directory, { recursive: true });
-        }
-
-        // Download file content
-        const contentResponse = await fetch(
-          `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${file.path}`
-        );
-        if (!contentResponse.ok) {
-          logger.error(`Failed to download file ${file.path}`);
-          continue;
-        }
-
-        const content = new Uint8Array(await contentResponse.arrayBuffer());
-        await webcontainer.fs.writeFile(targetPath, content);
-        logger.debug(`Written file ${targetPath}`);
-      }
-
-      logger.debug(`GitHub repository downloaded to ${action.targetDir}`);
-    } catch (error) {
-      logger.error('Failed to process GitHub repository\n\n', error);
-      throw error;
     }
   }
 
