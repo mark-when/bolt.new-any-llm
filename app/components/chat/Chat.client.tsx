@@ -99,7 +99,7 @@ export const ChatImpl = memo(
       return PROVIDER_LIST.find((p) => p.name === savedProvider) || DEFAULT_PROVIDER;
     });
 
-    const { showChat } = useStore(chatStore);
+    const { showChat, started } = useStore(chatStore);
 
     const [animationScope, animate] = useAnimate();
 
@@ -130,6 +130,12 @@ export const ChatImpl = memo(
     useEffect(() => {
       chatStore.setKey('started', initialMessages.length > 0);
     }, []);
+
+  useEffect(() => {
+    if (started) {
+      runAnimation();
+    }
+  }, [started]);
 
     useEffect(() => {
       parseMessages(messages, isLoading);
