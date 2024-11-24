@@ -400,10 +400,6 @@ export class WorkbenchStore {
     const wc = await webcontainer;
 
     try {
-      // Create target directory
-      await wc.fs.rm('.', { recursive: true });
-      await wc.fs.mkdir('.', { recursive: true });
-
       // Get the entire tree in one API call
       const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`);
       if (!treeResponse.ok) {
@@ -419,6 +415,10 @@ export class WorkbenchStore {
         return item.type === 'blob';
       });
 
+      await wc.fs.rm('.', { recursive: true });
+      await wc.fs.mkdir('.', { recursive: true });
+      this.setShowWorkbench(true);
+
       // Download and write files
       for (const file of relevantFiles) {
         const relativePath = file.path;
@@ -431,9 +431,7 @@ export class WorkbenchStore {
         }
 
         // Download file content
-        const contentResponse = await fetch(
-          `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`,
-        );
+        const contentResponse = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`);
         if (!contentResponse.ok) {
           console.error(`Failed to download file ${file.path}`);
           continue;
