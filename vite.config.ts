@@ -26,13 +26,32 @@ export default defineConfig((config) => {
       tsconfigPaths(),
       chrome129IssuePlugin(),
       config.mode === 'production' && optimizeCssModules({ apply: 'build' }),
+      {
+        name: 'headers',
+        apply: 'serve',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+            res.setHeader('cross-origin-resource-policy', 'cross-origin');
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            next();
+          });
+        },
+      },
     ],
-    envPrefix:["VITE_","OPENAI_LIKE_API_","OLLAMA_API_BASE_URL","LMSTUDIO_API_BASE_URL"],
+    envPrefix: ['VITE_', 'OPENAI_LIKE_API_', 'OLLAMA_API_BASE_URL', 'LMSTUDIO_API_BASE_URL'],
     css: {
       preprocessorOptions: {
         scss: {
           api: 'modern-compiler',
         },
+      },
+    },
+    server: {
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'credentialless',
+        'Cross-Origin-Resource-Policy': 'cross-origin',
+        'Cross-Origin-Opener-Policy': 'same-origin',
       },
     },
   };
