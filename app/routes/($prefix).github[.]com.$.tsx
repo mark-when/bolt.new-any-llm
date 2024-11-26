@@ -19,9 +19,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     searchParams[key] = value;
   });
 
-  return json<LoaderData>({ 
+  return json<LoaderData>({
     path: params['*'] || '',
-    searchParams
+    searchParams,
   });
 }
 
@@ -30,7 +30,7 @@ export default function GitHubImport() {
 
   return (
     <div className="flex flex-col h-full w-full">
-      <Header />
+      {/* <Header /> */}
       <ClientOnly fallback={<BaseChat />}>
         {() => (
           <>
