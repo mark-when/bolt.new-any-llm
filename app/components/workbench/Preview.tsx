@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { IconButton } from '~/components/ui/IconButton';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { PortDropdown } from './PortDropdown';
+import { themeStore } from '~/lib/stores/theme';
 
 export const Preview = memo(() => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -15,6 +16,17 @@ export const Preview = memo(() => {
 
   const [url, setUrl] = useState('');
   const [iframeUrl, setIframeUrl] = useState<string | undefined>();
+
+  window.addEventListener('message', (event) => {
+    if (event.source === window.parent) {
+      if (event.data.type === 'appState') {
+        themeStore.set(event.data.params?.isDark ? 'dark' : 'light');
+      }
+      iframeRef.current?.contentWindow?.postMessage(event.data, '*');
+    } else {
+      window.parent.parent.postMessage(event.data, '*');
+    }
+  });
 
   useEffect(() => {
     if (!activePreview) {
