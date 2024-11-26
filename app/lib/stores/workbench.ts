@@ -428,12 +428,14 @@ export class WorkbenchStore {
 
         // Create parent directory if needed
         const directory = targetPath.split('/').slice(0, -1).join('/');
+        let promise = Promise.resolve();
         if (directory !== '.') {
-          await wc.fs.mkdir(directory, { recursive: true });
+          promise.then(() => wc.fs.mkdir(directory, { recursive: true }));
         }
 
         // Download file content
-        fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`)
+        promise
+          .then(() => fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`))
           .then((resp) => {
             if (!resp.ok) {
               throw new Error();
