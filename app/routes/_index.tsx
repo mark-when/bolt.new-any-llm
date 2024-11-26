@@ -14,7 +14,7 @@ export const loader = () => json({});
 export default function Index() {
   return (
     <div className="flex flex-col h-full w-full">
-      <Header />
+      {false && <Header />}
       <ClientOnly fallback={<BaseChat />}>
         {() => (
           <>
