@@ -68,6 +68,9 @@ export const Terminal = memo(
 
       // we render a transparent cursor in case the terminal is readonly
       terminal.options.theme = getTerminalTheme(readonly ? { cursor: '#00000000' } : {});
+      requestAnimationFrame(() => {
+        terminal.options.theme = getTerminalTheme(readonly ? { cursor: '#00000000' } : {});
+      });
 
       terminal.options.disableStdin = readonly;
     }, [theme, readonly]);
