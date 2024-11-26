@@ -433,15 +433,19 @@ export class WorkbenchStore {
         }
 
         // Download file content
-        const contentResponse = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`);
-        if (!contentResponse.ok) {
-          console.error(`Failed to download file ${file.path}`);
-          continue;
-        }
-
-        const content = new Uint8Array(await contentResponse.arrayBuffer());
-        await wc.fs.writeFile(targetPath, content);
-        console.debug(`Written file ${targetPath}`);
+        fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`)
+          .then((resp) => {
+            if (!resp.ok) {
+              throw new Error();
+            }
+            return resp.arrayBuffer();
+          })
+          .then((buffer) => {
+            const write = wc.fs.writeFile(targetPath, new Uint8Array(buffer));
+            console.debug(`Written file ${targetPath}`);
+            return write;
+          })
+          .catch((e) => console.error(e));
       }
 
       console.debug(`GitHub repository downloaded`);
