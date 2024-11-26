@@ -15,6 +15,7 @@ import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest';
 import * as nodePath from 'node:path';
 import { extractRelativePath } from '~/utils/diff';
 import { chatStore } from './chat';
+import { fileTreeStore } from './fileTree';
 
 export interface ArtifactState {
   id: string;
@@ -425,6 +426,7 @@ export class WorkbenchStore {
       this.outstandingFiles.set(relevantFiles.length);
 
       // Download and write files
+      let promises = [];
       for (const file of relevantFiles) {
         const relativePath = file.path;
         const targetPath = ['.', ...relativePath.split('/')].join('/');
@@ -437,24 +439,53 @@ export class WorkbenchStore {
         }
 
         // Download file content
-        promise
-          .then(() => fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`))
-          .then((resp) => {
-            if (!resp.ok) {
+        promises.push(
+          promise
+            .then(() => fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`))
+            .then((resp) => {
+              if (!resp.ok) {
+                this.loadedFiles.set(this.loadedFiles.get() + 1);
+                throw new Error();
+              }
+              return resp.arrayBuffer();
+            })
+            .then((buffer) => {
+              const write = wc.fs.writeFile(targetPath, new Uint8Array(buffer));
+              console.debug(`Written file ${targetPath}`);
               this.loadedFiles.set(this.loadedFiles.get() + 1);
-              throw new Error();
-            }
-            return resp.arrayBuffer();
-          })
-          .then((buffer) => {
-            const write = wc.fs.writeFile(targetPath, new Uint8Array(buffer));
-            console.debug(`Written file ${targetPath}`);
-            this.loadedFiles.set(this.loadedFiles.get() + 1);
-            return write;
-          })
-          .catch((e) => console.error(e));
+              return write;
+            })
+            .then(() => {
+              fileTreeStore.collapseAll();
+            })
+            .catch((e) => console.error(e)),
+        );
       }
-
+      await Promise.all(promises);
+      fileTreeStore.collapseAll();
+      this.addArtifact({
+        id: '0',
+        title: 'Install',
+        messageId: 'message_1',
+      });
+      this.addAction({
+        action: {
+          content: 'npm install && npm run dev',
+          type: 'shell',
+        },
+        actionId: '0',
+        artifactId: 'artifact_1',
+        messageId: 'message_1',
+      });
+      this.runAction({
+        action: {
+          content: 'npm install && npm run dev',
+          type: 'shell',
+        },
+        actionId: '0',
+        artifactId: 'artifact_1',
+        messageId: 'message_1',
+      });
       console.debug(`GitHub repository downloaded`);
     } catch (error) {
       console.error('Failed to process GitHub repository\n\n', error);
