@@ -53,6 +53,8 @@ export class WorkbenchStore {
   showWorkbench: WritableAtom<boolean> = import.meta.hot?.data.showWorkbench ?? atom(true);
   currentView: WritableAtom<WorkbenchViewType> = import.meta.hot?.data.currentView ?? atom('code');
   unsavedFiles: WritableAtom<Set<string>> = import.meta.hot?.data.unsavedFiles ?? atom(new Set<string>());
+  outstandingFiles: WritableAtom<number> = import.meta.hot?.data.outstandingFiles ?? atom(0);
+  loadedFiles: WritableAtom<number> = import.meta.hot?.data.loadedFiles ?? atom(0);
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
   #globalExecutionQueue = Promise.resolve();
@@ -420,6 +422,7 @@ export class WorkbenchStore {
       await wc.fs.mkdir('.', { recursive: true });
       this.setShowWorkbench(true);
       chatStore.setKey('started', true);
+      this.outstandingFiles.set(relevantFiles.length);
 
       // Download and write files
       for (const file of relevantFiles) {
@@ -438,6 +441,7 @@ export class WorkbenchStore {
           .then(() => fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${file.path}`))
           .then((resp) => {
             if (!resp.ok) {
+              this.loadedFiles.set(this.loadedFiles.get() + 1);
               throw new Error();
             }
             return resp.arrayBuffer();
@@ -445,6 +449,7 @@ export class WorkbenchStore {
           .then((buffer) => {
             const write = wc.fs.writeFile(targetPath, new Uint8Array(buffer));
             console.debug(`Written file ${targetPath}`);
+            this.loadedFiles.set(this.loadedFiles.get() + 1);
             return write;
           })
           .catch((e) => console.error(e));
